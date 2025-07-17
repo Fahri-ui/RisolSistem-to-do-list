@@ -1,66 +1,41 @@
-let todos = [
-  { id: 1, title: "Belajar Next.js", status: "pending" },
-  { id: 2, title: "Kerjakan Tugas JDA", status: "completed" },
-];
+import { NextResponse } from "next/server";
+import { PrismaClient } from "@prisma/client";
 
-export async function GET(): Promise<Response> {
-  return new Response(JSON.stringify(todos), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
+const prisma = new PrismaClient();
+
+// ✅ GET semua data
+export async function GET() {
+  const todos = await prisma.todo.findMany({ orderBy: { createdAt: "desc" } });
+  return NextResponse.json(todos);
 }
 
-export async function POST(request: Request): Promise<Response> {
-  const body = await request.json();
-  const { title, status } = body;
-
-  const newTask = { id: Date.now(), title, status: status || "pending" };
-  todos.push(newTask);
-
-  return new Response(JSON.stringify(newTask), {
-    status: 201,
-    headers: { "Content-Type": "application/json" },
+// ✅ CREATE data baru
+export async function POST(request: Request) {
+  const { title } = await request.json();
+  const newTodo = await prisma.todo.create({
+    data: { title },
   });
+  return NextResponse.json(newTodo);
 }
 
-export async function PATCH(request: Request): Promise<Response> {
-  const body = await request.json();
-  const { id, title, status } = body;
+// ✅ UPDATE (PATCH)
+export async function PATCH(request: Request) {
+  const { id, title, status } = await request.json();
 
-  const existingTask = todos.find((task) => task.id === id);
-
-  if (existingTask) {
-    if (title !== undefined) existingTask.title = title;
-    if (status !== undefined) existingTask.status = status;
-
-    return new Response(JSON.stringify(existingTask), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  return new Response(JSON.stringify({ error: "Task not found" }), {
-    status: 404,
-    headers: { "Content-Type": "application/json" },
+  const updatedTodo = await prisma.todo.update({
+    where: { id },
+    data: {
+      ...(title && { title }),
+      ...(status && { status }),
+    },
   });
+
+  return NextResponse.json(updatedTodo);
 }
 
-export async function DELETE(request: Request): Promise<Response> {
-  const body = await request.json();
-  const { id } = body;
-
-  const index = todos.findIndex((task) => task.id === id);
-
-  if (index !== -1) {
-    const deletedTask = todos.splice(index, 1)[0];
-    return new Response(JSON.stringify(deletedTask), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  return new Response(JSON.stringify({ error: "Task not found" }), {
-    status: 404,
-    headers: { "Content-Type": "application/json" },
-  });
+// ✅ DELETE
+export async function DELETE(request: Request) {
+  const { id } = await request.json();
+  await prisma.todo.delete({ where: { id } });
+  return NextResponse.json({ message: "Deleted" });
 }
