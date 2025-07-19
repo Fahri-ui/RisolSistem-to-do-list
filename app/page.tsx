@@ -14,27 +14,30 @@ export default function TodosPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editedTitle, setEditedTitle] = useState("");
 
+  // ✅ Loading hanya untuk pertama kali akses halaman
+  const [initialLoading, setInitialLoading] = useState(true);
+
   useEffect(() => {
-    fetchTodos();
+    fetchTodos(true); // true artinya ini fetch awal, tampilkan skeleton
   }, []);
 
-  const fetchTodos = async () => {
+  const fetchTodos = async (isInitial = false) => {
+    if (isInitial) setInitialLoading(true);
     const res = await fetch("/api/todos");
     const data = await res.json();
     setTodos(data);
+    if (isInitial) setInitialLoading(false);
   };
 
   const handleAddTask = async () => {
     if (!newTitle.trim()) return;
-    const res = await fetch("/api/todos", {
+    await fetch("/api/todos", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: newTitle, status: "pending" }),
     });
-    if (res.ok) {
-      setNewTitle("");
-      fetchTodos();
-    }
+    setNewTitle("");
+    fetchTodos(); // ✅ fetch ulang tanpa trigger skeleton
   };
 
   const toggleStatus = async (task: Todo) => {
@@ -44,7 +47,7 @@ export default function TodosPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: task.id, status: newStatus }),
     });
-    fetchTodos();
+    fetchTodos(); // ✅ fetch ulang tanpa skeleton
   };
 
   const startEditing = (task: Todo) => {
@@ -66,7 +69,7 @@ export default function TodosPage() {
     });
     setEditingId(null);
     setEditedTitle("");
-    fetchTodos();
+    fetchTodos(); // ✅ fetch ulang tanpa skeleton
   };
 
   const handleDelete = async (id: number) => {
@@ -75,7 +78,7 @@ export default function TodosPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
-    fetchTodos();
+    fetchTodos(); // ✅ fetch ulang tanpa skeleton
   };
 
   const handleKeyPress = (e: React.KeyboardEvent, action: () => void) => {
@@ -163,7 +166,23 @@ export default function TodosPage() {
 
         {/* Task List */}
         <div className="space-y-4">
-          {todos.length === 0 ? (
+          {initialLoading ? (
+            // ✅ Skeleton hanya muncul saat pertama kali load
+            <div className="space-y-3 animate-pulse">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="bg-gray-800 rounded-xl p-4 shadow-lg border border-gray-700"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-8 h-8 rounded-full bg-gray-700"></div>
+                    <div className="flex-1 h-4 bg-gray-700 rounded"></div>
+                    <div className="w-16 h-4 bg-gray-700 rounded"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : todos.length === 0 ? (
             <div className="text-center py-12">
               <div className="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400 text-2xl">
                 📝
