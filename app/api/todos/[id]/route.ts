@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 
-let todos = [
+const todos = [
   { id: 1, title: "Belajar Next.js", status: "pending" },
   { id: 2, title: "Kerjakan Tugas Kampus", status: "completed" },
 ];
