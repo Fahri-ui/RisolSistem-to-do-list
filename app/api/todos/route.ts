@@ -1,11 +1,22 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient();
+// ✅ Prisma Client singleton biar gak bikin banyak koneksi di Vercel
+const globalForPrisma = global as unknown as { prisma: PrismaClient };
+export const prisma =
+  globalForPrisma.prisma || new PrismaClient();
+
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+
+// ✅ Paksa route ini selalu dynamic
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs"; // jangan pakai edge runtime
 
 // ✅ GET semua data
 export async function GET() {
-  const todos = await prisma.todo.findMany({ orderBy: { createdAt: "desc" } });
+  const todos = await prisma.todo.findMany({
+    orderBy: { createdAt: "desc" },
+  });
   return NextResponse.json(todos);
 }
 
